@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Guest List Manager</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Link to Google Fonts for 'Inter' -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Message Box for notifications (success, error, info) -->
+    <div id="messageBox" class="message-box hidden">
+        <span id="messageText"></span>
+    </div>
+
+    <!-- Main application container -->
+    <div class="container">
+        <h1>Event Guest List Manager</h1>
+
+        <!-- Form to add new guests -->
+        <form id="addGuestForm" class="add-guest-form">
+            <div class="form-group">
+                <label for="guestName">Guest Name</label>
+                <input type="text" id="guestName" placeholder="Enter guest name" required class="input-field">
+            </div>
+            <button type="submit" class="button primary">Add Guest</button>
+        </form>
+
+        <!-- Guest count display -->
+        <div class="guest-count">
+            Guests (<span id="guestCount">0</span>/10)
+        </div>
+
+        <!-- List where guests will be displayed -->
+        <ul id="guestList" class="guest-list">
+            <!-- Guest list items will be dynamically added here by JavaScript -->
+        </ul>
+    </div>
+
+    <!-- Link to our JavaScript file. 'defer' ensures the HTML is parsed before the script runs. -->
+    <script src="index.js" defer></script>
+</body>
+</html>
