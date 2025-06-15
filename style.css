@@ -21,6 +21,9 @@ body {
     max-width: 28rem; 
     border: 1px solid #e2e8f0; 
 }
+#container.image{
+    justify-content: center;
+}
 
 /* Heading styling */
 h1 {
