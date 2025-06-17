@@ -56,5 +56,4 @@ Usage
         Use the "Search Guests" input field to type a name or category. The list will dynamically filter as you type.
 
 
-This project was developed by Joe M Kariuki, as a code challenge by Moringa School
-email mwanikijoe1@gmail.com
+This project was developed by Joe M Kariuki, as a code challenge by Moringa School. my email is mwanikijoe1@gmail.com . feel free to contribute further
