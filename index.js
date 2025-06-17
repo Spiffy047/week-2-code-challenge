@@ -1,168 +1,191 @@
-
 // 1. DOM Elements Selection
-// We select all the necessary HTML elements by their IDs.
-// This makes it easier to access and manipulate them in the JavaScript code.
-const addGuestForm = document.getElementById('addGuestForm'); // The form to add guests
-const guestNameInput = document.getElementById('guestName'); // Input field for guest name
-const guestListUl = document.getElementById('guestList'); // The unordered list where guests will be displayed
-const guestCountSpan = document.getElementById('guestCount'); // Span to display current guest count
-const messageBox = document.getElementById('messageBox'); // The notification message box
-const messageText = document.getElementById('messageText'); // Text content within the message box
+
+const addGuestForm = document.getElementById('addGuestForm'); // The form used to add new guests
+const guestNameInput = document.getElementById('guestName'); // The input field for the guest's name
+const guestCategoryInput = document.getElementById('guestCategory'); // The input/select for guest category
+const guestListUl = document.getElementById('guestList'); // The unordered list (<ul>) where guest items will be displayed
+const guestCountSpan = document.getElementById('guestCount'); // A <span> element to display the total number of guests
+const messageBox = document.getElementById('messageBox'); // The container for temporary user messages (e.g., success/error)
+const messageText = document.getElementById('messageText'); // The <span> inside messageBox where the actual message text goes
+const searchInput = document.getElementById('searchInput'); // The input field for filtering/searching guests
 
 // 2. Application State Variables
-// The guests array starts empty. Guests will only appear
-// on the page after they are submitted through the form.
-let guests = [];
-const MAX_GUESTS = 10; // Constant for the maximum number of guests allowed.
+// These variables define the core data and configuration that the application manages.
+let guests = []; // The main array holding all guest objects. Each guest is an object.
+const MAX_GUESTS = 10; 
+let currentFilter = ''; 
+
+const createElement = (tag, classes = [], textContent = '', attributes = {}) => {
+    const el = document.createElement(tag);
+    if (classes.length) el.classList.add(...classes); 
+    if (textContent) el.textContent = textContent;
+    for (const key in attributes) {
+        el.setAttribute(key, attributes[key]);
+    }
+    return el; 
+};
 
 // 3. Utility Function: showMessage()
-/**
- * Displays a custom message box at the top of the screen.
- * This is used for user feedback (e.g., success, error, info messages).
- * @param {string} message - The text content to display in the message box.
- * @param {'success' | 'error' | 'info'} type - The type of message, which determines its styling (color).
- * @param {number} duration - How long the message should be visible in milliseconds (default to 3 seconds).
- */
 function showMessage(message, type = 'info', duration = 3000) {
-    messageText.textContent = message; // Set the message text
-    // Apply appropriate CSS classes based on the message type to style it.
-    // The 'show' class makes it visible, and type (e.g., 'success') adds color.
+    messageText.textContent = message; 
     messageBox.className = `message-box show ${type}`;
-    messageBox.classList.remove('hidden'); // Ensure the message box is visible
-
-    // Set a timeout to hide the message box after the specified duration.
+    messageBox.classList.remove('hidden'); 
     setTimeout(() => {
-        messageBox.classList.remove('show'); // Fade out
-        messageBox.classList.add('hidden'); // Hide completely
+        messageBox.classList.remove('show'); 
+        messageBox.classList.add('hidden'); 
     }, duration);
 }
 
 // 4. Core Rendering Function: renderGuests()
-/**
- * Renders (or re-renders) the entire guest list in the DOM based on the 'guests' array.
- * This function is called whenever the 'guests' array is modified (add, remove, toggle).
- */
 function renderGuests() {
-    guestListUl.innerHTML = ''; // Clear all existing guest list items to avoid duplicates.
-    guestCountSpan.textContent = guests.length; // Update the guest count display.
+    guestListUl.innerHTML = ''; 
+    guestCountSpan.textContent = guests.length; 
+    const filteredGuests = guests.filter(guest => {
+        const searchTerm = currentFilter.toLowerCase();
+        return guest.name.toLowerCase().includes(searchTerm) ||
+               guest.category.toLowerCase().includes(searchTerm);
+    });
 
-    // If there are no guests, display a friendly message.
-    if (guests.length === 0) {
-        const emptyMessage = document.createElement('li'); // Create a new list item element
-        emptyMessage.className = 'empty-list-message'; // Apply styling for empty message
-        emptyMessage.textContent = 'No guests added yet. Start by adding one!'; // Set message text
-        guestListUl.appendChild(emptyMessage); // Add to the guest list
-        return; // Exit the function
+    // If no guests are found after filtering 
+    if (filteredGuests.length === 0) {
+        const msg = guests.length === 0 ?
+            'No guests added yet. Start by adding one!' :
+            'No guests found matching your search criteria.'; 
+        guestListUl.appendChild(createElement('li', ['empty-list-message'], msg));
+        return;
     }
 
-    // Iterate over each guest in the 'guests' array to create their corresponding DOM elements.
-    guests.forEach(guest => {
-        const listItem = document.createElement('li'); // Create a list item for each guest
-        listItem.id = `guest-${guest.id}`; // Assign a unique ID to the list item for easy reference
-        listItem.className = 'guest-list-item'; // Apply styling for list item
+    // Iterate over the filtered guests and create/append their HTML representation
+    filteredGuests.forEach(guest => {
+        // Destructure guest object properties for easier access
+        const { id, name, status, category, timestamp } = guest;
+        const listItem = createElement('li', ['guest-list-item'], '', { id: `guest-${id}` });
 
-        // Create a div for guest information (name)
-        const guestInfo = document.createElement('div');
-        guestInfo.className = 'guest-info';
+        // a span to display the guest's name
+        const guestNameDisplay = createElement('span', ['guest-name-display'], name);
+        const categoryTag = createElement('span', ['category-tag', `category-${category.toLowerCase()}`], category);
+        const timestampSpan = createElement('span', [], `Added: ${new Date(timestamp).toLocaleString()}`);
+        const guestMeta = createElement('div', ['guest-meta']);
+        guestMeta.append(categoryTag, timestampSpan);
 
-        const guestNameElement = document.createElement('span'); // Span for guest's name
-        guestNameElement.textContent = guest.name;
-        guestInfo.appendChild(guestNameElement);
+        // Group guest name and info
+        const guestInfo = createElement('div', ['guest-info']);
+        guestInfo.append(guestNameDisplay, guestMeta);
 
-        // Create a div for action buttons (RSVP, Remove)
-        const actionsDiv = document.createElement('div');
-        actionsDiv.className = 'actions-div';
+        //RSVP toggle button
+        const toggleRsvpBtn = createElement('button', ['button', 'rsvp', `status-${status.toLowerCase().replace(' ', '-')}`], status);
+        toggleRsvpBtn.addEventListener('click', () => toggleRsvp(id));
 
-        // Create and configure the RSVP Toggle Button
-        const toggleRsvpBtn = document.createElement('button');
-        toggleRsvpBtn.textContent = guest.status === 'Attending' ? 'Attending' : 'Not Attending';
-        // Dynamically apply CSS classes for RSVP status styling.
-        toggleRsvpBtn.className = `button rsvp ${guest.status === 'Attending' ? 'status-attending' : 'status-not-attending'}`;
-        // Add an event listener to toggle RSVP status when clicked.
-        toggleRsvpBtn.addEventListener('click', () => toggleRsvp(guest.id));
+        // Edit button
+        const editBtn = createElement('button', ['button', 'edit'], 'Edit');
+        editBtn.addEventListener('click', () => editGuest(id, guestNameDisplay));
 
-        // Create and configure the Remove Button
-        const removeBtn = document.createElement('button');
-        removeBtn.textContent = 'Remove';
-        removeBtn.className = 'button remove'; // Apply styling for remove button
-        // Add an event listener to remove the guest when clicked.
-        removeBtn.addEventListener('click', () => removeGuest(guest.id));
+        //Remove button
+        const removeBtn = createElement('button', ['button', 'remove'], 'Remove');
+        removeBtn.addEventListener('click', () => removeGuest(id));
 
-        actionsDiv.appendChild(toggleRsvpBtn);
-        actionsDiv.appendChild(removeBtn);
-
-        listItem.appendChild(guestInfo);
-        listItem.appendChild(actionsDiv);
+        const actionsDiv = createElement('div', ['actions-div']);
+        actionsDiv.append(toggleRsvpBtn, editBtn, removeBtn);
 
         
+        listItem.append(guestInfo, actionsDiv);
         guestListUl.appendChild(listItem);
     });
 }
 
-// 5. Event Listener: Add Guest Form Submission
-/**
- * Handles the submission of the "Add Guest" form.
- * This function prevents default form behavior (page reload) and adds a new guest.
- */
+
+// 5. Event Listener:Guest Form Submission
 addGuestForm.addEventListener('submit', (event) => {
-    event.preventDefault(); // Prevent the browser from reloading the page on form submission.
+    event.preventDefault(); 
 
-    const guestName = guestNameInput.value.trim(); // Get guest name and remove leading/trailing whitespace.
-
-    // Input validation: Check if guest name is empty.
-    if (guestName === '') {
-        showMessage('Please enter a guest name.', 'error');
-        return; // Stop execution if validation fails.
+    const guestName = guestNameInput.value.trim(); 
+    const guestCategory = guestCategoryInput.value; 
+    if (!guestName) {
+        showMessage('Please enter a guest name.', 'error'); 
+        return; // Stop the function execution
     }
 
-    // Limit check: Ensure guest list does not exceed MAX_GUESTS.
+    // Check if the guest list has reached its maximum allowed limit
     if (guests.length >= MAX_GUESTS) {
         showMessage(`Guest list limit of ${MAX_GUESTS} reached! Cannot add more guests.`, 'error');
-        return; // Stop execution if limit is reached.
+        return; 
     }
 
-    // Create a new guest object with a unique ID, name, default status.
+    // new guest object with a unique ID, default status, and timestamp
     const newGuest = {
-        id: crypto.randomUUID(), // Generates a universally unique identifier (UUID) for the guest.
+        id: crypto.randomUUID(), // Generates a universally unique identifier for the guest
         name: guestName,
-        status: 'Attending', // Default RSVP status
+        status: 'Attending',
+        category: guestCategory,
+        timestamp: new Date().toISOString() 
     };
 
-    guests.push(newGuest); // Add the new guest object to the 'guests' array.
-    renderGuests(); // Re-render the guest list to show the newly added guest.
-    guestNameInput.value = ''; // Clear the guest name input field.
-    showMessage('Guest added successfully!', 'success'); // Show a success message.
+    guests.push(newGuest); 
+    renderGuests(); 
+    guestNameInput.value = ''; 
+    showMessage('Guest added successfully!', 'success'); 
 });
 
 // 6. Action Function: removeGuest()
-/**
- * Removes a guest from the list based on their unique ID.
- * @param {string} id - The ID of the guest to be removed.
- */
 function removeGuest(id) {
-    // Filter out the guest with the matching ID, effectively removing them from the array.
     guests = guests.filter(guest => guest.id !== id);
-    renderGuests(); // Re-render the guest list to reflect the removal.
-    showMessage('Guest removed.', 'info'); // Show an informational message.
+    renderGuests(); 
+    showMessage('Guest removed.', 'info'); 
 }
 
 // 7. Action Function: toggleRsvp()
-/**
- * Toggles the RSVP status of a guest between 'Attending' and 'Not Attending'.
- * @param {string} id - The ID of the guest whose RSVP status is to be toggled.
- */
 function toggleRsvp(id) {
-    // Find the index of the guest in the 'guests' array.
-    const guestIndex = guests.findIndex(guest => guest.id === id);
-    if (guestIndex > -1) { // Check if the guest was found
-        // Toggle the status: if 'Attending', change to 'Not Attending', otherwise change to 'Attending'.
-        guests[guestIndex].status = guests[guestIndex].status === 'Attending' ? 'Not Attending' : 'Attending';
-        renderGuests(); // Re-render the guest list to update the status display.
-        showMessage(`Guest RSVP changed to '${guests[guestIndex].status}'.`, 'info'); // Show confirmation.
+    const guest = guests.find(g => g.id === id); 
+    if (guest) { 
+        guest.status = guest.status === 'Attending' ? 'Not Attending' : 'Attending';
+        renderGuests(); 
+        showMessage(`Guest RSVP changed to '${guest.status}'.`, 'info'); 
     }
 }
 
-// 8. Initial Render
-// This function call ensures that the guest list is rendered when the page first loads.
-// Since 'guests' array starts empty, it will display the "No guests added yet" message initially.
+// 8. Action Function: editGuest()
+function editGuest(id, guestNameDisplayElement) {
+    const guest = guests.find(g => g.id === id); // Find the guest object by its ID
+    if (!guest) return; 
+    const listItem = document.getElementById(`guest-${id}`);
+    const actionsDiv = listItem.querySelector('.actions-div');
+
+    const editInputField = createElement('input', ['input-field', 'edit-guest-input'], '', { type: 'text', value: guest.name });
+    const saveBtn = createElement('button', ['button', 'save'], 'Save');
+    guestNameDisplayElement.replaceWith(editInputField);
+    actionsDiv.innerHTML = '';
+    actionsDiv.append(saveBtn);
+
+    editInputField.focus();
+
+    // Inner function to handle saving the changes after editing
+    const saveChanges = () => {
+        const newName = editInputField.value.trim(); 
+        if (!newName) { 
+            showMessage('Guest name cannot be empty.', 'error');
+            editInputField.focus(); 
+            return; 
+        }
+        guest.name = newName; 
+        renderGuests(); 
+                       
+        showMessage('Guest name updated successfully!', 'success'); 
+    };
+
+    //event listeners to trigger `saveChanges()`
+    saveBtn.addEventListener('click', saveChanges); 
+    editInputField.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { 
+            saveChanges();
+        }
+    });
+}
+
+// 9. Search Functionality
+
+searchInput.addEventListener('input', (event) => {
+    currentFilter = event.target.value; 
+    renderGuests(); 
+});
+
 renderGuests();
